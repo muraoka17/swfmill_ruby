@@ -126,6 +126,7 @@ module SwfmillRuby
       @xmldoc.find('.//DefineBitsJPEG2').each { |n| @images[n.attributes['objectID']] = DefineBitsJPEG2.xml2image(n) }
       @xmldoc.find('.//DefineEditText').each { |n| @texts[n.attributes['objectID']] = n.attributes['initialText'] }
 
+      @inserted = {}
       @referred_place_object = Hash.new do |hash,object_id|
         xml = ""
         # pickup referred DefineShape
@@ -148,20 +149,19 @@ module SwfmillRuby
           xml << e.to_s
         end
         # pickup referred PlaceSprite(Recursive)
-        inserted = {}
         @xmldoc.find(".//DefineSprite[@objectID='#{object_id}']").each do |e|
           e.find('.//PlaceObject2[@objectID]').each do |re|
-            unless inserted[re.attributes['objectID']] then
+            unless @inserted[re.attributes['objectID']] then
               xmldoc = LibXML::XML::Document.string("<root>#{@referred_place_object[re.attributes['objectID']]}</root>")
-              xmldoc.find('//DefineEditText[@fontRef]').each do |re|
-                unless inserted[re.attributes['fontRef']] then
-                  xml << @referred_place_object[re.attributes['fontRef']]
-                  inserted[re.attributes['fontRef']] = true
+              xmldoc.find('//DefineEditText[@fontRef]').each do |re2|
+                unless @inserted[re2.attributes['fontRef']] then
+                  xml << @referred_place_object[re2.attributes['fontRef']]
+                  @inserted[re2.attributes['fontRef']] = true
                 end
               end
 
               xml << @referred_place_object[re.attributes['objectID']]
-              inserted[re.attributes['objectID']] = true
+              @inserted[re.attributes['objectID']] = true
             end
           end
           xml << e.to_s
