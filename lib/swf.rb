@@ -70,6 +70,9 @@ module SwfmillRuby
             e.find("#{xpath_axes}*[@objectID='#{from}']").each do |ae|
               ae.attributes['objectID'] = to
             end
+            e.find("#{xpath_axes}*[@fontRef='#{from}']").each do |ae|
+              ae.attributes['fontRef'] = to
+            end
           end
         end
       end
@@ -136,6 +139,10 @@ module SwfmillRuby
           end
           xml << e1.to_s
         end
+        # pickup referred DefineFont
+        @xmldoc.find(".//*[self::DefineFont[@objectID='#{object_id}'] or self::DefineFont2[@objectID='#{object_id}'] or self::DefineFont3[@objectID='#{object_id}']]").each do |e|
+          xml << e.to_s
+        end
         # pickup referred DefineEditText
         @xmldoc.find(".//DefineEditText[@objectID='#{object_id}']").each do |e|
           xml << e.to_s
@@ -145,6 +152,14 @@ module SwfmillRuby
         @xmldoc.find(".//DefineSprite[@objectID='#{object_id}']").each do |e|
           e.find('.//PlaceObject2[@objectID]').each do |re|
             unless inserted[re.attributes['objectID']] then
+              xmldoc = LibXML::XML::Document.string("<root>#{@referred_place_object[re.attributes['objectID']]}</root>")
+              xmldoc.find('//DefineEditText[@fontRef]').each do |re|
+                unless inserted[re.attributes['fontRef']] then
+                  xml << @referred_place_object[re.attributes['fontRef']]
+                  inserted[re.attributes['fontRef']] = true
+                end
+              end
+
               xml << @referred_place_object[re.attributes['objectID']]
               inserted[re.attributes['objectID']] = true
             end
@@ -567,6 +582,9 @@ module SwfmillRuby
                 object_id_map.each do |from,to|
                   e.find("#{xpath_axes}*[@objectID='#{from}']").each do |ae|
                     ae.attributes['objectID'] = to
+                  end
+                  e.find("#{xpath_axes}*[@fontRef='#{from}']").each do |ae|
+                    ae.attributes['fontRef'] = to
                   end
                 end
               end
